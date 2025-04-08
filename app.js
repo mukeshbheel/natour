@@ -1,96 +1,32 @@
-const fs = require("fs")
-const express = require("express")
+const express = require('express');
+const morgan = require('morgan');
 
-const app = express()
+const tourRouter = require('./routes/tourRoutes');
+const userRouter = require('./routes/userRoutes');
 
-app.use(express.json())
+const app = express();
 
-const port = 3000
+// 1.) MIDDLEWARES
 
-const tours = JSON.parse(fs.readFileSync(`${__dirname}/dev-data/data/tours-simple.json`))
+app.use(morgan('dev'));
 
-const getAllTour = (req, res) => {
-    res.status(200).json({
-        status: "success",
-        results: tours.length,
-        data: {
-            tours
-        }
-    })
-}
+app.use(express.json());
 
-const createNewTour = (req, res) => {
-    console.log(req.body)
+app.use((req, res, next) => {
+  console.log('hello from the middleware');
+  next();
+});
 
-    const id = tours[tours.length-1].id + 1
-    const newTour = Object.assign({id: id}, req.body)
-    tours.push(newTour)
+app.use((req, res, next) => {
+  req.requestTime = new Date().toISOString();
+  next();
+});
 
-    res.status(201).json({
-        status: "success",
-        data: {
-            tour: newTour
-        }
-    })
-}
+// 3.) ROUTES
 
-const getTour = (req, res) => {
-    const id = req.params.id * 1
-    const tour = tours.find(el => el.id === id)
+app.use('/api/v1/tours', tourRouter);
+app.use('/api/v1/users', userRouter);
 
-    if(!tour){
-        return res.status(404).json({
-            status: "fail",
-            message: "Invalid ID"
-        })
-    }
+// 4.) START SERVER
 
-    res.status(200).json({
-        status: "success",
-        data: {
-            tour
-        }
-    })
-}
-
-const updateTour = (req, res) => {
-    const id = req.params.id * 1
-    const tour = tours.find(el => el.id === id)
-
-    if(!tour){
-        return res.status(404).json({
-            status: "fail",
-            message: "Invalid ID"
-        })
-    }
-
-    res.status(200).json({
-        status: "success",
-        message: "updated tour here"
-    })
-}
-
-const deleteTour = (req, res) => {
-    const id = req.params.id * 1
-    const tour = tours.find(el => el.id === id)
-
-    if(!tour){
-        return res.status(404).json({
-            status: "fail",
-            message: "Invalid ID"
-        })
-    }
-
-    res.status(204).json({
-        status: "success",
-        data: null
-    })
-}
-
-app.route("/api/v1/tours").get(getAllTour).post(createNewTour)
-app.route("/api/v1/tours/:id").get(getTour).patch(updateTour).delete(deleteTour)
-
-
-app.listen(port, () => {
-    console.log(`Server is listening at port ${port}...`)
-})
+module.exports = app;
