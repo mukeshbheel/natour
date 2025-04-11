@@ -1,15 +1,15 @@
 const express = require('express');
-const tourController = require('./../controllers/tourController');
+const tourController = require('../controllers/tourController');
 
 const router = express.Router();
 
 // PARAM MIDDLEWARE
-router.param('id', tourController.checkID);
+// router.param('id', tourController.checkID);
 
 router
   .route('/')
   .get(tourController.getAllTour)
-  .post(tourController.createNewTour);
+  .post(tourController.checkPostbody, tourController.createNewTour);
 router
   .route('/:id')
   .get(tourController.getTour)
