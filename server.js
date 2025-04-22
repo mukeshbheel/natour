@@ -5,16 +5,15 @@ dotenv.config({
   path: './config.env',
 });
 
-// const DB = process.env.DATABASE;
-const DB = process.env.DATABASE.replace(
+const DB = process.env.DATABASE_STANDARD.replace(
   '<PASSWORD>',
   process.env.DATABASE_PASSWORD,
 );
 
+console.log(DB)
+
 mongoose
   .connect(DB, {
-    // useNewUrlParser: true,
-    // useUnifiedTopology: true,
   })
   .then((con) => {
     // console.log(con.connections);

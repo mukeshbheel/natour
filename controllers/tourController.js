@@ -1,37 +1,19 @@
 const Tour = require('../models/tourModel');
+const APIFeatures = require('../utils/apiFeatures')
+
+exports.aliasTopTour = (req,res,next)=>{
+  req.query.limit = 5;
+  req.query.sort = '-ratingAvarage,price'
+  req.query.fields = 'name,duration,price,ratingAvarage'
+  next()
+}
 
 exports.getAllTour = async (req, res) => {
   try {
-    let queryObj = { ...req.query };
-    const excludedQueryFields = ['page', 'sort', 'limit', 'fields'];
-    excludedQueryFields.forEach((el) => delete queryObj[el]);
-
-    // ADVANCE FILTERING
-    let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
-    queryObj = JSON.parse(queryStr);
-
-    let query = Tour.find(queryObj);
-
-    // SORTING
-    if (req.query.sort) {
-      const sortBy = req.query.sort.split(',').join(' ');
-      query = query.sort(sortBy);
-    } else {
-      query = query.sort('-createdAt');
-    }
-
-    // FIELDS FILTERING / PROJECTION
-    if (req.query.fields) {
-      const fields = req.query.fields.split(',').join(' ');
-      query.select(fields);
-    } else {
-      query.select('-__v');
-    }
-
     // EXECUTE QUERY
-    // console.log(query);
-    const tours = await query;
+    const features = new APIFeatures(Tour.find(), req.query).filter().sort().limitFields().paginate()
+
+    const tours = await features.query;
     res.status(200).json({
       status: 'success',
       results: tours.length,
@@ -42,7 +24,7 @@ exports.getAllTour = async (req, res) => {
   } catch (err) {
     res.status(404).json({
       status: 'fail',
-      message: err,
+      message: err.message,
     });
   }
 };
@@ -113,7 +95,47 @@ exports.deleteTour = async (req, res) => {
   } catch (err) {
     res.status(404).json({
       status: 'fail',
-      message: err,
+      message: err.message,
     });
   }
 };
+
+exports.getTourStats = async (req, res) => {
+  try{
+    const stats = await Tour.aggregate([
+      {
+        $match: { ratingAvarage: { $gte: 4.5}}
+      },
+      {
+        $group: {
+          _id: {$toUpper: "$difficulty"},
+          numTours: {$sum : 1},
+          numRatings: {$sum : "$ratingQuantity"},
+          avgRating: {$avg: "$ratingAvarage"},
+          avgPrice: {$avg: "$price"},
+          minPrice: {$min: "$price"},
+          maxPrice: {$max: "$price"},
+        }
+      },
+      {
+        $sort: {avgPrice: 1}
+      },
+      // {
+      //   $match: { _id: { $ne: "EASY"}}
+      // }
+    ])
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        stats
+      },
+    });
+
+  }catch(err){
+    res.status(404).json({
+      status: 'fail',
+      message: err.message,
+    });
+  }
+}
