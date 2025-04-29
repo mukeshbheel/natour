@@ -10,15 +10,12 @@ const DB = process.env.DATABASE_STANDARD.replace(
   process.env.DATABASE_PASSWORD,
 );
 
-console.log(DB)
+console.log(DB);
 
-mongoose
-  .connect(DB, {
-  })
-  .then((con) => {
-    // console.log(con.connections);
-    console.log('DB connection successful');
-  });
+mongoose.connect(DB, {}).then((con) => {
+  // console.log(con.connections);
+  console.log('DB connection successful');
+});
 
 const app = require('./app');
 
